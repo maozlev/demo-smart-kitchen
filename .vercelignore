@@ -1,0 +1,9 @@
+*.xlsx
+*.xls
+*.csv
+whatsapp-sender
+
+image.png
+image copy.png
+.env
+.env.*

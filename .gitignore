@@ -1,0 +1,11 @@
+.vercel
+node_modules
+whatsapp-sender/.wwebjs_auth
+whatsapp-sender/.wwebjs_cache
+
+.env
+.env.*
+*.xlsx
+*.csv
+.wwebjs_auth
+.wwebjs_cache

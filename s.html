@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3B4BD8">
+<title>סקר – Smart Kitchen</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%B3%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--acc:#3B4BD8;--acc-soft:#E8EAFB;--bg:#ECEEF8;--card:#FFFFFF;--ink:#202124;--muted:#5F6368;--line:#DADCE0;--err:#D93025}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:Rubik,system-ui,sans-serif;font-size:16px;line-height:1.5;padding:12px 16px 48px}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:22px 24px}
+.head{border-top:10px solid var(--acc);padding-top:20px}
+.head h1{margin:0 0 6px;font-size:30px;font-weight:500;line-height:1.25}
+.head p{margin:0;color:var(--muted);font-size:15px}
+.head .req-note{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);color:var(--err);font-size:14px}
+.q{transition:border-color .15s}
+.q.bad{border-color:var(--err)}
+.q h2{margin:0 0 16px;font-size:16px;font-weight:500}
+.q h2 .star{color:var(--err);margin-inline-start:4px}
+.scale{display:flex;align-items:flex-end;gap:4px;justify-content:space-between}
+.scale .end{color:var(--muted);font-size:14px;padding-bottom:6px;white-space:nowrap}
+.scale label{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font-size:14px;min-width:0}
+.opts{display:flex;flex-direction:column;gap:2px}
+.opts label{display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer}
+input[type=radio]{width:20px;height:20px;margin:0;accent-color:var(--acc);cursor:pointer}
+.text{width:100%;border:none;border-bottom:1px solid var(--line);padding:8px 0;font:inherit;font-size:15px;background:transparent;resize:none;overflow:hidden;min-height:40px}
+.text:focus{outline:none;border-bottom:2px solid var(--acc)}
+.err{display:none;margin-top:12px;color:var(--err);font-size:13px}
+.q.bad .err{display:block}
+.actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.send{height:40px;padding:0 26px;border:none;border-radius:6px;background:var(--acc);color:#FFF;font:inherit;font-weight:600;font-size:15px;cursor:pointer}
+.send:hover{background:#2A37A8}
+.clear{border:none;background:none;color:var(--acc);font:inherit;font-size:14px;cursor:pointer;padding:8px}
+.foot{text-align:center;color:var(--muted);font-size:12.5px;margin-top:8px}
+.done h1{font-size:26px}
+.done a{color:var(--acc);font-size:14px}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+@media (max-width:480px){.card{padding:18px 16px}.head h1{font-size:24px}.scale .end{display:none}}
+</style>
+</head>
+<body>
+<main class="wrap" id="app"></main>
+<noscript><div class="wrap"><div class="card head"><h1>צריך להפעיל JavaScript כדי למלא את הסקר</h1></div></div></noscript>
+<script>
+(function () {
+  'use strict';
+  /* הסקרים לדוגמה. סקר שנוצר בדמו מגיע עם התוכן שלו בקישור עצמו (אחרי #) */
+  var SURVEYS = {
+    a7k2: { t: 'שביעות רצון מהארוחה', d: 'נשמח לשמוע איך הייתה הארוחה. זה לוקח פחות מדקה.', q: [
+      { type: 'rating', q: 'איך הייתה הארוחה היום?' },
+      { type: 'choice', q: 'איזו מנה הכי אהבת?', options: ['שניצל', 'קבב', 'שווארמה', 'קציצות'] },
+      { type: 'text', q: 'מה היית משפר?' }
+    ] },
+    m3p9: { t: 'משוב הצוות על המערכת', d: 'המשוב עוזר לנו לשפר את המערכת עבורכם.', q: [
+      { type: 'rating', q: 'כמה קל להזין את הדיווח היומי?' },
+      { type: 'text', q: 'מה חסר לכם במערכת?' }
+    ] },
+    q8t1: { t: 'איכות האספקה', d: 'כמה שאלות קצרות על שיתוף הפעולה שלנו.', q: [
+      { type: 'rating', q: 'עד כמה ההזמנות מגיעות בזמן?' },
+      { type: 'choice', q: 'איך אתם מעדיפים לקבל הזמנות?', options: ['מייל', 'וואטסאפ', 'טלפון'] }
+    ] }
+  };
+
+  function fromHash() {
+    var h = location.hash.slice(1);
+    if (!h) return null;
+    try {
+      var b = h.replace(/-/g, '+').replace(/_/g, '/');
+      while (b.length % 4) b += '=';
+      var o = JSON.parse(decodeURIComponent(escape(atob(b))));
+      return o && o.t && Array.isArray(o.q) ? o : null;
+    } catch (e) { return null; }
+  }
+
+  var code = (location.pathname.match(/\/s\/([^\/?#]+)/) || [])[1] || new URLSearchParams(location.search).get('c') || '';
+  var sv = fromHash() || SURVEYS[code];
+  var app = document.getElementById('app');
+
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    for (var k in attrs || {}) {
+      if (k === 'text') n.textContent = attrs[k];
+      else if (k.indexOf('on') === 0) n.addEventListener(k.slice(2), attrs[k]);
+      else n.setAttribute(k, attrs[k]);
+    }
+    (kids || []).forEach(function (c) { if (c) n.appendChild(c); });
+    return n;
+  }
+  function foot() { return el('p', { class: 'foot', text: 'Smart Kitchen · סקרים' }); }
+
+  if (!sv) {
+    document.title = 'הסקר לא נמצא';
+    app.appendChild(el('div', { class: 'card head' }, [
+      el('h1', { text: 'הסקר לא נמצא' }),
+      el('p', { text: 'ייתכן שהקישור לא הועתק עד הסוף. כדאי לבקש קישור חדש ממי ששלח אותו.' })
+    ]));
+    app.appendChild(foot());
+    return;
+  }
+
+  document.title = sv.t;
+  var hasReq = sv.q.some(function (q) { return q.type !== 'text'; });
+  var cards = [];
+
+  function render() {
+    app.innerHTML = '';
+    cards = [];
+    app.appendChild(el('div', { class: 'card head' }, [
+      el('h1', { text: sv.t }),
+      sv.d ? el('p', { text: sv.d }) : null,
+      hasReq ? el('div', { class: 'req-note', text: '* שאלת חובה' }) : null
+    ]));
+
+    sv.q.forEach(function (q, i) {
+      var name = 'q' + i, req = q.type !== 'text', body;
+      var title = el('h2', { id: name + '-t' }, [document.createTextNode(q.q), req ? el('span', { class: 'star', 'aria-hidden': 'true', text: '*' }) : null]);
+      if (q.type === 'rating') {
+        body = el('div', { class: 'scale', role: 'radiogroup', 'aria-labelledby': name + '-t' },
+          [el('span', { class: 'end', text: 'גרוע' })].concat([1, 2, 3, 4, 5].map(function (v) {
+            return el('label', {}, [el('span', { text: String(v) }), el('input', { type: 'radio', name: name, value: String(v), 'aria-label': String(v) })]);
+          })).concat([el('span', { class: 'end', text: 'מצוין' })]));
+      } else if (q.type === 'choice') {
+        body = el('div', { class: 'opts', role: 'radiogroup', 'aria-labelledby': name + '-t' }, (q.options || []).map(function (o) {
+          return el('label', {}, [el('input', { type: 'radio', name: name, value: o }), el('span', { text: o })]);
+        }));
+      } else {
+        body = el('textarea', { class: 'text', name: name, rows: '1', placeholder: 'התשובה שלך', 'aria-labelledby': name + '-t',
+          oninput: function (e) { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; } });
+      }
+      var card = el('section', { class: 'card q' }, [title, body, el('div', { class: 'err', text: 'זו שאלת חובה' })]);
+      card.addEventListener('change', function () { card.classList.remove('bad'); });
+      cards.push({ card: card, req: req, name: name });
+      app.appendChild(card);
+    });
+
+    app.appendChild(el('div', { class: 'actions' }, [
+      el('button', { type: 'button', class: 'send', text: 'שליחה', onclick: submit }),
+      el('button', { type: 'button', class: 'clear', text: 'ניקוי הטופס', onclick: function () { render(); scrollTo(0, 0); } })
+    ]));
+    app.appendChild(foot());
+  }
+
+  function submit() {
+    var first = null;
+    cards.forEach(function (c) {
+      var ok = !c.req || !!c.card.querySelector('input[name="' + c.name + '"]:checked');
+      c.card.classList.toggle('bad', !ok);
+      if (!ok && !first) first = c.card;
+    });
+    if (first) { first.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    app.innerHTML = '';
+    app.appendChild(el('div', { class: 'card head done' }, [
+      el('h1', { text: sv.t }),
+      el('p', { text: 'תודה! התשובה שלך נקלטה.' }),
+      el('p', {}, [el('a', { href: '#', text: 'שליחת תשובה נוספת', onclick: function (e) { e.preventDefault(); render(); } })])
+    ]));
+    app.appendChild(foot());
+    scrollTo(0, 0);
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "smart-kitchen-whatsapp-sender",
+  "private": true,
+  "description": "שולח את הסקרים בוואטסאפ מהמספר המחובר, עבור האתר של Smart Kitchen",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4",
+    "qrcode-terminal": "0.12.0",
+    "whatsapp-web.js": "1.34.7"
+  }
+}
