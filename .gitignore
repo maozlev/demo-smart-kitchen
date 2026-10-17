@@ -9,3 +9,8 @@ whatsapp-sender/.wwebjs_cache
 *.csv
 .wwebjs_auth
 .wwebjs_cache
+
+# קבצי מקור ובדיקות של העוזר האישי
+/agent.png
+/מנסור*.png
+/voice-test/
